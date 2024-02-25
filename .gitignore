@@ -1,0 +1,8 @@
+env
+.log
+*.log
+__pycache__
+env/lib/python3.10/site-packages/aiohttp/_http_writer.cpython-310-x86_64-linux-gnu.so
+.csv
+.xlsx
+.env
