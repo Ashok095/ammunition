@@ -196,11 +196,14 @@ class ExtractPalmettoStateArmory:
             self.handle_age_verification()
         except Exception as e:
             logger.info(f"error during soup generation: {e}")
+            self.driver.quit()
+            time.sleep(5)
             return None
         else:
             logger.info("Returning soup element.")
             soup = bs(self.driver.page_source, "html.parser")
             self.driver.quit()
+            time.sleep(5)
             return soup
 
     def get_soup_element(self, url):
