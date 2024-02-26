@@ -170,7 +170,6 @@ class ExtractPalmettoStateArmory:
     #             else:
     #                 self.driver = None
 
-
     def soup_generator(self, url) -> bs:
         logger.info("=" * 50)
         logger.info(f"Getting soup element for URL: {url}")
@@ -196,14 +195,13 @@ class ExtractPalmettoStateArmory:
 
             self.handle_age_verification()
         except Exception as e:
-            logger.info('error during soup generation')
+            logger.info(f"error during soup generation: {e}")
             return None
         else:
             logger.info("Returning soup element.")
             soup = bs(self.driver.page_source, "html.parser")
             self.driver.quit()
             return soup
-    
 
     def get_soup_element(self, url):
         for attempts in range(self.max_retries):
@@ -213,11 +211,11 @@ class ExtractPalmettoStateArmory:
                 return soup
             else:
                 # if self.is_webdriver_alive():
-                    # try:
-                    #     # Attempt to quit regardless of errors
-                    #     self.driver.quit()
-                    # except Exception as e:
-                    #     logger.error(f"Error during driver quit: {e}")
+                # try:
+                #     # Attempt to quit regardless of errors
+                #     self.driver.quit()
+                # except Exception as e:
+                #     logger.error(f"Error during driver quit: {e}")
                 # Ensure attribute is reset
                 # self.driver = None
                 logger.warning("Soup not found, taking rest for 100 seconds")
@@ -326,7 +324,7 @@ class ExtractPalmettoStateArmory:
                     product_details = get_product_data(soup)
                     product_category = get_category(url)
                     product_details["product_info"] = {"url": url}
-                    product_details['category'] = product_category
+                    product_details["category"] = product_category
                     filtered_data = self.get_filtered_data(product_details)
                     self.insert_data_to_db(filtered_data)
             else:
@@ -357,7 +355,7 @@ class ExtractPalmettoStateArmory:
                 "features": data["features"],
                 "images": data["images"],
                 "product_url": data["product_info"].get("url"),
-                "category": data['category'],
+                "category": data["category"],
             }
             final_output.append(data_dict)
 
