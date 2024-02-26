@@ -83,6 +83,9 @@ class CabelasExtractor:
                 data = self.extract_data(result)
                 return data
             elif resp.status_code == 401:
+                logger.info(f"error {resp.status_code}")
+                logger.info(f"error {resp.content}")
+
                 continue
             else:
                 logger.info(f"error {resp.status_code}")
