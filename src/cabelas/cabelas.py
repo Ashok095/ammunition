@@ -39,7 +39,7 @@ logger.handlers = []
 # Add the file handler to the logger
 logger.addHandler(file_handler)
 
-json_path = log_path = Path(__file__).parent / 'cabelas.json'
+json_path = log_path = Path(__file__).parent / "cabelas.json"
 
 
 class CabelasExtractor:
@@ -47,15 +47,29 @@ class CabelasExtractor:
         self.max_retires = 4
         self.token = None
         self.db = DatabaseLoader()
+        self.headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:123.0) Gecko/20100101 Firefox/123.0",
+            "Accept": "*/*",
+            "Accept-Language": "en-US,en;q=0.5",
+            "Accept-Encoding": "gzip, deflate, br",
+            "Referer": "https://www.cabelas.com/",
+            "Content-Type": "application/json",
+            "Content-Length": "695",
+            "Origin": "https://www.cabelas.com",
+            "DNT": "1",
+            "Sec-GPC": "1",
+            "Connection": "keep-alive",
+            "Sec-Fetch-Dest": "empty",
+            "Sec-Fetch-Mode": "cors",
+            "Sec-Fetch-Site": "cross-site",
+            "Pragma": "no-cache",
+            "Cache-Control": "no-cache",
+            "TE": "trailers",
+        }
 
     def _get_authorization(self):
         url = "https://www.cabelas.com/c/guns"
-        headers = {
-            "Accept-Encoding": "gzip, deflate",
-            "Content-Type": "application/json",
-            "User-Agent": "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36",
-        }
-        response = requests.get(url, headers=headers)
+        response = requests.get(url, headers=self.headers)
         key = re.findall(r'token\":"(.*?)"', response.text)
         authorization = "".join(key)
         return authorization
@@ -65,18 +79,12 @@ class CabelasExtractor:
             self.token = self._get_authorization()
             url = "https://platform.cloud.coveo.com/rest/search/v2"
             params = {"organizationId": "bassproshopsproductionl92epymr"}
-            headers = {
-                "Accept-Encoding": "gzip, deflate",
-                "Content-Type": "application/json",
-                "User-Agent": "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36",
-                "Authorization": f"Bearer {self.token}",
-                "Referer": "https://www.cabelas.com/",
-            }
+            self.headers["Authorization"] = f"Bearer {self.token}"
 
             with open(str(json_path), "r") as f:
                 payload = json.load(f)
             resp = requests.post(
-                url, headers=headers, params=params, data=json.dumps(payload)
+                url, headers=self.headers, params=params, data=json.dumps(payload)
             )
             if resp.status_code == 200:
                 result = resp.json()
