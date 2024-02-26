@@ -10,7 +10,7 @@ import sys
 from dotenv import load_dotenv
 
 load_dotenv()
-sys.path.append(os.getenv('append_path'))
+sys.path.append(os.getenv("append_path"))
 
 logger = logging.getLogger()
 
@@ -29,14 +29,14 @@ class DatabaseLoader:
         self.insert_product_sql = """
             INSERT INTO guns_products (
             brand, title, product_url, description, images, category, features, availability,
-            marked_price, selling_price, discount_price, sku, caliber, model, upc, guns_source_id
-            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            marked_price, selling_price, sku,  upc, guns_source_id
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             """
         self.select_gun_source_sql = "SELECT id FROM guns_source WHERE code_name = %s"
 
         self.select_product_sql = "select product_url from guns_products where product_url = %s and guns_source_id = %s"
 
-    def _connect_and_execute(self, query, params=None):
+    def _connect_and_execute(self, query, params=None, columns=False):
         try:
             with mysql.connector.connect(**self.db_config, autocommit=True) as cnx:
                 with cnx.cursor() as cursor:
@@ -47,7 +47,14 @@ class DatabaseLoader:
                     else:
                         cursor.execute(query)
                     # Adjust as needed for different queries
-                    return cursor.fetchall()
+                    result = cursor.fetchall()
+                    # commit the changes
+                    cnx.commit()
+                    if columns:
+                        # Fetch column names
+                        columns = [desc[0] for desc in cursor.description]
+                        return columns, result
+                    return result
         except mysql.connector.Error as err:
             if err.errno == errorcode.ER_ACCESS_DENIED_ERROR:
                 logger.error("Error: Access denied.")
@@ -99,11 +106,7 @@ class DatabaseLoader:
                 availability = product["availability"]
                 marked_price = product["marked_price"]
                 selling_price = product["selling_price"]
-                discount_price = product["discount_price"]
-
                 sku = product["sku"]
-                caliber = product["caliber"]
-                model = product["model"]
                 upc = product["upc"]
 
                 product_data = (
@@ -117,10 +120,7 @@ class DatabaseLoader:
                     availability,
                     marked_price,
                     selling_price,
-                    discount_price,
                     sku,
-                    caliber,
-                    model,
                     upc,
                     source_id,
                 )

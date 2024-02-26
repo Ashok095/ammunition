@@ -4,8 +4,20 @@ import pandas as pd
 from db import DatabaseLoader
 import json
 import logging
+import os
+import sys
 
-logging.basicConfig(filename='cabelas.log', level=logging.DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+from dotenv import load_dotenv
+
+load_dotenv()
+
+sys.path.append(os.getenv("append_path"))
+
+logging.basicConfig(
+    filename="cabelas.log",
+    level=logging.DEBUG,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+)
 logger = logging.getLogger()
 
 
@@ -53,5 +65,3 @@ for csv_file in csv_file_list:
 new_df = pd.DataFrame(filtered_data)
 final_data = new_df.to_dict(orient="records")
 database.insert_gun_products(final_data, source_code_name="cabelas")
-
-

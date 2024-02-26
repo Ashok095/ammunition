@@ -558,3 +558,12 @@ def check404(soup):
     if content_404:
         return True
     return False
+
+
+def get_category(url):
+    categories = {"pistol", "revolver", "rifle", "shotgun"}
+    url_parts_set = set(url.split("-"))
+    # Convert the URL parts and categories to sets
+    matching_categories = url_parts_set.intersection(categories)
+    category = matching_categories.pop() if matching_categories else "guns"
+    return category

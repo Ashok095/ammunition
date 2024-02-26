@@ -6,6 +6,14 @@ from db import DatabaseLoader
 import json
 import logging
 import numpy as np
+import os
+import sys
+
+from dotenv import load_dotenv
+
+load_dotenv()
+
+sys.path.append(os.getenv("append_path"))
 
 logging.basicConfig(
     filename="midway_csv.log",

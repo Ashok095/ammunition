@@ -2,6 +2,7 @@
 import os
 import sys
 from dotenv import load_dotenv
+
 load_dotenv()
 sys.path.append(os.getenv("append_path"))
 
@@ -40,6 +41,7 @@ from utils_psa import (
     is_next_button_available,
     is_next_page_available,
     check404,
+    get_category,
 )
 
 # Get today's date
@@ -64,12 +66,9 @@ logger.addHandler(file_handler)
 
 class ExtractPalmettoStateArmory:
     def __init__(self):
-        self.driver = None
         self.database = DatabaseLoader()
         self.max_retries = 5
-        # self.chrome_profile_path = os.getenv("google_profile_path")
-        # self.driver_failed = False
-
+        self.driver = None
 
     def _create_chrome_options(self):
         chrome_options = uc.ChromeOptions()
@@ -100,7 +99,6 @@ class ExtractPalmettoStateArmory:
 
     @contextmanager
     def webdriver_session(self):
-        self.driver = None
         try:
             logger.info(f"Starting WebDriver attempt")
             chrome_options = self._create_chrome_options()
@@ -126,51 +124,86 @@ class ExtractPalmettoStateArmory:
                 # Ensure attribute is reset
             self.driver = None
 
+    # def soup_generator(self, url) -> bs:
+    #     logger.info("")
+    #     logger.info("")
+    #     logger.info("=" * 50)
+    #     logger.info(f"Getting soup element for URL: {url}")
+    #     with self.webdriver_session() as driver:
+    #         try:
+    #             # Navigate to the URL and handle age verification
+    #             driver.get(url)
+    #             time.sleep(5)
+    #             # Adjust timeout as needed
+    #             driver.set_script_timeout(60)
+    #             # Wait for the element with id="maincontent" to be present
+    #             WebDriverWait(driver, 50).until(
+    #                 EC.presence_of_element_located((By.ID, "maincontent"))
+    #             )
+
+    #             self.handle_age_verification()
+    #             soup = bs(driver.page_source, "html.parser")
+    #             logger.info("Returning soup element.")
+    #             return soup
+    #             # return driver
+
+    #         except TimeoutException:
+    #             logger.error(
+    #                 "Timeout: The element with id='maincontent' did not appear in 50 seconds"
+    #             )
+    #             current_date = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
+    #             png_name = f"timeout-{current_date}.png"
+    #             driver.save_screenshot(png_name)
+    #             logger.error("Timeout error. retrying again")
+    #             return False
+
+    #         except Exception as e:
+    #             logger.error(f"Error: {e}")
+    #             current_date = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
+    #             png_name = f"error-{current_date}.png"
+    #             driver.save_screenshot(png_name)
+    #             logger.error("could not get the soup")
+    #             return False
+    #         finally:
+    #             if self.is_webdriver_alive():
+    #                 self.driver.quit()
+    #             else:
+    #                 self.driver = None
+
+
     def soup_generator(self, url) -> bs:
-        logger.info("")
-        logger.info("")
         logger.info("=" * 50)
         logger.info(f"Getting soup element for URL: {url}")
-        with self.webdriver_session() as driver:
-            try:
-                # Navigate to the URL and handle age verification
-                driver.get(url)
-                time.sleep(5)
-                # Adjust timeout as needed
-                driver.set_script_timeout(60)
-                # Wait for the element with id="maincontent" to be present
-                WebDriverWait(driver, 50).until(
-                    EC.presence_of_element_located((By.ID, "maincontent"))
-                )
+        try:
+            chrome_options = self._create_chrome_options()
+            self.driver = uc.Chrome(options=chrome_options, port=9222, version_main=121)
+            user_agent, platform = self._get_user_agent()
+            self.driver.set_page_load_timeout(60)
+            self.driver.execute_cdp_cmd(
+                "Network.setUserAgentOverride",
+                {"userAgent": user_agent, "platform": platform},
+            )
 
-                self.handle_age_verification()
-                soup = bs(driver.page_source, "html.parser")
-                logger.info("Returning soup element.")
-                return soup
-                # return driver
+            # Navigate to the URL and handle age verification
+            self.driver.get(url)
+            time.sleep(5)
+            # Adjust timeout as needed
+            self.driver.set_script_timeout(60)
+            # Wait for the element with id="maincontent" to be present
+            WebDriverWait(self.driver, 50).until(
+                EC.presence_of_element_located((By.ID, "maincontent"))
+            )
 
-            except TimeoutException:
-                logger.error(
-                    "Timeout: The element with id='maincontent' did not appear in 50 seconds"
-                )
-                current_date = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
-                png_name = f"timeout-{current_date}.png"
-                driver.save_screenshot(png_name)
-                logger.error("Timeout error. retrying again")
-                return False
-
-            except Exception as e:
-                logger.error(f"Error: {e}")
-                current_date = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
-                png_name = f"error-{current_date}.png"
-                driver.save_screenshot(png_name)
-                logger.error("could not get the soup")
-                return False
-            finally:
-                if self.is_webdriver_alive():
-                    self.driver.quit()
-                else:
-                    self.driver = None
+            self.handle_age_verification()
+        except Exception as e:
+            logger.info('error during soup generation')
+            return None
+        else:
+            logger.info("Returning soup element.")
+            soup = bs(self.driver.page_source, "html.parser")
+            self.driver.quit()
+            return soup
+    
 
     def get_soup_element(self, url):
         for attempts in range(self.max_retries):
@@ -179,14 +212,14 @@ class ExtractPalmettoStateArmory:
                 logger.info(f"Soup found in attempt: {attempts+1}")
                 return soup
             else:
-                if self.is_webdriver_alive():
-                    try:
-                        # Attempt to quit regardless of errors
-                        self.driver.quit()
-                    except Exception as e:
-                        logger.error(f"Error during driver quit: {e}")
+                # if self.is_webdriver_alive():
+                    # try:
+                    #     # Attempt to quit regardless of errors
+                    #     self.driver.quit()
+                    # except Exception as e:
+                    #     logger.error(f"Error during driver quit: {e}")
                 # Ensure attribute is reset
-                self.driver = None
+                # self.driver = None
                 logger.warning("Soup not found, taking rest for 100 seconds")
                 time.sleep(100)
                 logger.info("waking up after 100 seconds")
@@ -291,7 +324,9 @@ class ExtractPalmettoStateArmory:
                     continue
                 else:
                     product_details = get_product_data(soup)
+                    product_category = get_category(url)
                     product_details["product_info"] = {"url": url}
+                    product_details['category'] = product_category
                     filtered_data = self.get_filtered_data(product_details)
                     self.insert_data_to_db(filtered_data)
             else:
@@ -322,7 +357,7 @@ class ExtractPalmettoStateArmory:
                 "features": data["features"],
                 "images": data["images"],
                 "product_url": data["product_info"].get("url"),
-                "category": data["breadcrumb"].get("category", "gun"),
+                "category": data['category'],
             }
             final_output.append(data_dict)
 
