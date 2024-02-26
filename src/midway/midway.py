@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-sys.path.append(os.getenv('append_path'))
+sys.path.append(os.getenv("append_path"))
 
 from algoliasearch.search_client import SearchClient
 import requests
@@ -232,7 +232,7 @@ class MidWayExtractor:
             data = self.get_api_resonse_from_request(url)
 
             family_id = data["productFamily"].get("familyNumber", None)
-            if not family_id: 
+            if not family_id:
                 family_id = get_family_and_object_id(url)
             if not family_id:
                 continue

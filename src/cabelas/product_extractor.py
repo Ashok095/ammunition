@@ -34,7 +34,7 @@ if __name__ == "__main__":
         else:
             current_datetime = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
             message = (
-                f"{current_datetime}: Product details has been successfully extracted"
+                f"{current_datetime}: Cabelas Product details has been successfully extracted"
             )
             slack.send_message(message)
             break

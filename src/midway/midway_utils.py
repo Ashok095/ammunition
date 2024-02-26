@@ -161,7 +161,7 @@ def extract_details_from_response(response_data):
     marked_price, selling_price, discount_price = get_price(price_view_data)
 
     product_dict = {
-        "features": features,
+        "features": json.dumps(features),
         "availability": availability,
         "description": description,
         "category": category,
@@ -169,7 +169,7 @@ def extract_details_from_response(response_data):
         "brand": brand_name,
         "sku": sku,
         "upc": upc,
-        "images": images,
+        "images": json.dumps(images),
         "product_url": product_url,
         "marked_price": marked_price,
         "selling_price": selling_price,
