@@ -8,8 +8,6 @@ sys.path.append(os.getenv("append_path"))
 
 from cabelas import CabelasExtractor
 from datetime import datetime
-import requests
-import json
 import time
 from slack import SlackMessenger
 

@@ -135,10 +135,9 @@ class DatabaseLoader:
                 )
                 logger.info(f"{title} - inserted successfully")
                 for image in product["images"]:
-                    print(image)
-                    print(product_id)
+                    logger.info(f"inserting image: {image} for product id {product_id}")
                     statement = (
-                        """INSERT INTO PRODUCT_MEDIA (product_id, link) VALUE (%s, %s)"""
+                        """INSERT INTO product_media (product_id, link) VALUE (%s, %s)"""
                     )
                     image_id = self._connect_and_execute(statement, (product_id, image))
         else:
