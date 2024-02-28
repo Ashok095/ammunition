@@ -151,15 +151,15 @@ class CabelasExtractor:
                 "brand": product_data.get("ec_brand", None),
                 "product_url": url.format(product_data.get("producturlkeyword", None)),
                 "description": product_data["ec_description"],
-                "images": json.dumps(images),
+                "images": images,
                 "category": category,
-                "features": json.dumps(features),
+                "features": features,
                 "availability": availability,
-                "marked_price": marked_price,
-                "selling_price": selling_price,
+                "price": marked_price,
+                "sale_price": selling_price,
                 "upc": product_data.get("upc", None),
                 "sku": product_data.get("sku", None),
-                "discount_price": product_data.get("maxsavings", None),
+                # "discount_price": product_data.get("maxsavings", None),
             }
             all_output.append(output)
         return all_output

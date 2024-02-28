@@ -18,6 +18,7 @@ def get_family_and_object_id(url):
         pid_value = None
     return family_id, pid_value
 
+
 def convert_to_nested_dict(raw_data):
     logger.info("convert_to_nested_dict - converting breadcrumb to dictionary")
     nested_dict = {}
@@ -118,7 +119,7 @@ def extract_details_from_response(response_data):
     category = response_data["productFamily"]["productType"]
 
     family_id = response_data["productFamily"].get("familyNumber", None)
-    
+
     brand_name = response_data["productFamily"]["brandInformation"].get(
         "brandName", None
     )
@@ -161,7 +162,7 @@ def extract_details_from_response(response_data):
     marked_price, selling_price, discount_price = get_price(price_view_data)
 
     product_dict = {
-        "features": json.dumps(features),
+        "features": features,
         "availability": availability,
         "description": description,
         "category": category,
@@ -169,13 +170,13 @@ def extract_details_from_response(response_data):
         "brand": brand_name,
         "sku": sku,
         "upc": upc,
-        "images": json.dumps(images),
+        "images": images,
         "product_url": product_url,
-        "marked_price": marked_price,
-        "selling_price": selling_price,
-        "discount_price": discount_price,
-        "caliber": None,
-        "model": None,
+        "price": marked_price,
+        "sale_price": selling_price,
+        # "discount_price": discount_price,
+        # "caliber": None,
+        # "model": None,
     }
     products.append(product_dict)
     return products

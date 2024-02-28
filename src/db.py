@@ -28,9 +28,9 @@ class DatabaseLoader:
         # print(self.db_config)
         self.insert_product_sql = """
             INSERT INTO guns_products (
-            brand, title, product_url, description, images, category, features, availability,
-            marked_price, selling_price, sku,  upc, guns_source_id
-            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            brand, title, product_url, description, category, features, availability,
+            price, sale_price, sku, upc, guns_source_id
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             """
         self.select_gun_source_sql = "SELECT id FROM guns_source WHERE code_name = %s"
 
@@ -46,10 +46,17 @@ class DatabaseLoader:
                         cursor.execute(query, params)
                     else:
                         cursor.execute(query)
-                    # Adjust as needed for different queries
-                    result = cursor.fetchall()
-                    # commit the changes
-                    cnx.commit()
+
+                    if "insert" in query.lower():
+                        # commit the changes
+                        result = cursor.lastrowid
+                        cnx.commit()
+                    else:
+                        result = cursor.fetchall()
+
+                    # print(query)
+                    # print(cursor.lastrowid)
+                    # result = cursor.lastrowid if cursor.lastrowid else cursor.fetchall()
                     if columns:
                         # Fetch column names
                         columns = [desc[0] for desc in cursor.description]
@@ -99,13 +106,12 @@ class DatabaseLoader:
                 product_url = product["product_url"]
                 description = product["description"]
                 # convert list to JSON string
-                images = json.dumps(product["images"])
                 category = product["category"]
                 # convert dictionary to JSON string
                 features = json.dumps(product["features"])
                 availability = product["availability"]
-                marked_price = product["marked_price"]
-                selling_price = product["selling_price"]
+                price = product["price"]
+                sale_price = product["sale_price"]
                 sku = product["sku"]
                 upc = product["upc"]
 
@@ -114,18 +120,27 @@ class DatabaseLoader:
                     title,
                     product_url,
                     description,
-                    images,
+                    # images,
                     category,
                     features,
                     availability,
-                    marked_price,
-                    selling_price,
+                    price,
+                    sale_price,
                     sku,
                     upc,
                     source_id,
                 )
-                self._connect_and_execute(self.insert_product_sql, product_data)
+                product_id = self._connect_and_execute(
+                    self.insert_product_sql, product_data
+                )
                 logger.info(f"{title} - inserted successfully")
+                for image in product["images"]:
+                    print(image)
+                    print(product_id)
+                    statement = (
+                        """INSERT INTO PRODUCT_MEDIA (product_id, link) VALUE (%s, %s)"""
+                    )
+                    image_id = self._connect_and_execute(statement, (product_id, image))
         else:
             logger.warning("Insertion halted")
             logger.warning(f"source code name {source_code_name} not found")
