@@ -86,7 +86,7 @@ class ExtractPalmettoStateArmory:
         chrome_options.add_argument("--disable-blink-features=AutomationControlled")
         # chrome_options.add_argument("--user-data-dir=" + str(self.chrome_profile_path))
 
-        chrome_options.headless = False
+        chrome_options.headless = True
         chrome_options.use_subprocess = False
         return chrome_options
 
