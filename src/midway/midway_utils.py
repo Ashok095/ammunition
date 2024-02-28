@@ -101,6 +101,13 @@ def get_price(data):
         selling_price = extract_price_from_money(raw_selling_price)
         raw_discount_price = data.get("discountedPriceAmount", None)
         discount_price = extract_price_from_money(raw_discount_price)
+        
+        if (selling_price is None) and (marked_price is not None):
+            selling_price = marked_price
+        
+        if (marked_price is None) and (selling_price is not None):
+            marked_price = selling_price
+
         return marked_price, selling_price, discount_price
     return None, None, None
 

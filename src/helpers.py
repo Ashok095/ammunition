@@ -24,12 +24,13 @@ def kill_chrome_process():
         except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
             pass
 
-
-
 def open_chrome():
     try:
-        subprocess.Popen(['chromium'])  # Command to open Chrome
+        # Command to open Chrome
+        subprocess.Popen(['chromium'])  
         logger.info("Chrome opened successfully.")
     except Exception as e:
-        logger("Error:", e)
+        logger.error(f"Error occured while opening chromium:{e}")
+        logger.info(f"checking for google-chrome:{e}")
+        subprocess.Popen(['google-chrome'])
 

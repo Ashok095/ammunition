@@ -143,6 +143,13 @@ def get_product_pricing(element):
             else None
         )
 
+    if (current_price is None) and (old_price is not None):
+        current_price = old_price
+    
+    if (old_price is None) and (current_price is not None):
+        old_price = current_price
+
+
     # Create a dictionary with pricing information
     data = {
         "offer_price": float(current_price) if current_price else None,

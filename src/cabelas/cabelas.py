@@ -144,8 +144,14 @@ class CabelasExtractor:
             images = [value for key, value in image_dict.items() if value]
             marked_price_raw = product_data.get("listprice", None)
             marked_price = float(marked_price_raw) if marked_price_raw else None
-            selling_price_raw = product_data.get("listprice", None)
+            selling_price_raw = product_data.get("ec_price", None)
             selling_price = float(selling_price_raw) if selling_price_raw else None
+
+            if (selling_price is None) and (marked_price is not None):
+                selling_price = marked_price
+        
+            if (marked_price is None) and (selling_price is not None):
+                marked_price = selling_price
             output = {
                 "title": data["title"],
                 "brand": product_data.get("ec_brand", None),

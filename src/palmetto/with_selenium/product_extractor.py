@@ -8,11 +8,8 @@ sys.path.append(os.getenv("append_path"))
 
 from palmetto_state_armory import ExtractPalmettoStateArmory
 from datetime import datetime
-import requests
-import json
 import time
 from slack import SlackMessenger
-from helpers import kill_chrome_process, open_chrome
 
 if __name__ == "__main__":
     flag = True
@@ -31,8 +28,6 @@ if __name__ == "__main__":
             message = f"{current_datetime}: Error occured while Extracting Palmetto State Armory.\nError details: {e}"
             slack.send_message(message)
             sleep_time = i * 5
-            kill_chrome_process()
-            open_chrome()
             slack.send_message(f"sleeping for {sleep_time}seconds")
             time.sleep(sleep_time)
             i += 1

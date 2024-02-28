@@ -29,6 +29,7 @@ from selenium.common.exceptions import (
     TimeoutException,
     NoSuchElementException,
     WebDriverException,
+    NoSuchWindowException,
 )
 import undetected_chromedriver as uc
 
@@ -43,6 +44,7 @@ from utils_psa import (
     check404,
     get_category,
 )
+from helpers import kill_chrome_process, open_chrome
 
 # Get today's date
 todays_date = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
@@ -84,105 +86,49 @@ class ExtractPalmettoStateArmory:
         chrome_options.add_argument("--disable-blink-features=AutomationControlled")
         # chrome_options.add_argument("--user-data-dir=" + str(self.chrome_profile_path))
 
-        chrome_options.headless = True
+        chrome_options.headless = False
         chrome_options.use_subprocess = False
         return chrome_options
 
     def _get_user_agent(self, os="linux"):
-        if os == "linux":
-            platform = "Linux x86_64"
-        else:
-            platform = "Windows"
+        platform = "Linux x86_64" if os == "linux" else  "Windows"
         ua = UserAgent(os=os, browsers=["chrome"])
-        user_agent = ua.random
-        return user_agent, platform
+        return ua.random, platform
 
-    @contextmanager
-    def webdriver_session(self):
+    def _setup_new_driver(self):
         try:
-            logger.info(f"Starting WebDriver attempt")
             chrome_options = self._create_chrome_options()
-            self.driver = uc.Chrome(options=chrome_options, port=9222, version_main=121)
+            self.driver = uc.Chrome(options=chrome_options, port=9222, version_main=122)
             user_agent, platform = self._get_user_agent()
             self.driver.set_page_load_timeout(60)
             self.driver.execute_cdp_cmd(
                 "Network.setUserAgentOverride",
                 {"userAgent": user_agent, "platform": platform},
             )
-            yield self.driver
         except Exception as e:
-            logger.error(f"Error starting driver: {e}")
-            raise RuntimeError("Failed to start driver")
-
+            logger.error(f"Error occured: {e}")
+            self.clear_chrome_resources()
+        
+    def clear_chrome_resources(self):
+        try:
+            logger.info('Quiting current driver')
+            self.driver.quit()
+        except Exception as e:
+            logger.info(f'Error occured while quiting driver: {e}')
         finally:
-            if self.is_webdriver_alive():
-                try:
-                    # Attempt to quit regardless of errors
-                    self.driver.quit()
-                except Exception as e:
-                    logger.error(f"Error during driver quit: {e}")
-                # Ensure attribute is reset
-            self.driver = None
-
-    # def soup_generator(self, url) -> bs:
-    #     logger.info("")
-    #     logger.info("")
-    #     logger.info("=" * 50)
-    #     logger.info(f"Getting soup element for URL: {url}")
-    #     with self.webdriver_session() as driver:
-    #         try:
-    #             # Navigate to the URL and handle age verification
-    #             driver.get(url)
-    #             time.sleep(5)
-    #             # Adjust timeout as needed
-    #             driver.set_script_timeout(60)
-    #             # Wait for the element with id="maincontent" to be present
-    #             WebDriverWait(driver, 50).until(
-    #                 EC.presence_of_element_located((By.ID, "maincontent"))
-    #             )
-
-    #             self.handle_age_verification()
-    #             soup = bs(driver.page_source, "html.parser")
-    #             logger.info("Returning soup element.")
-    #             return soup
-    #             # return driver
-
-    #         except TimeoutException:
-    #             logger.error(
-    #                 "Timeout: The element with id='maincontent' did not appear in 50 seconds"
-    #             )
-    #             current_date = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
-    #             png_name = f"timeout-{current_date}.png"
-    #             driver.save_screenshot(png_name)
-    #             logger.error("Timeout error. retrying again")
-    #             return False
-
-    #         except Exception as e:
-    #             logger.error(f"Error: {e}")
-    #             current_date = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
-    #             png_name = f"error-{current_date}.png"
-    #             driver.save_screenshot(png_name)
-    #             logger.error("could not get the soup")
-    #             return False
-    #         finally:
-    #             if self.is_webdriver_alive():
-    #                 self.driver.quit()
-    #             else:
-    #                 self.driver = None
-
+            logger.info('killing Chrome process if any')
+            kill_chrome_process()
+            time.sleep(20)
+            open_chrome()
+            time.sleep(10)
+            self.driver=None
+    
     def soup_generator(self, url) -> bs:
         logger.info("=" * 50)
         logger.info(f"Getting soup element for URL: {url}")
         try:
-            chrome_options = self._create_chrome_options()
-            self.driver = uc.Chrome(options=chrome_options, port=9222, version_main=121)
-            user_agent, platform = self._get_user_agent()
-            self.driver.set_page_load_timeout(60)
-            self.driver.execute_cdp_cmd(
-                "Network.setUserAgentOverride",
-                {"userAgent": user_agent, "platform": platform},
-            )
-
+            if self.driver is None:
+                self._setup_new_driver()
             # Navigate to the URL and handle age verification
             self.driver.get(url)
             time.sleep(5)
@@ -196,14 +142,11 @@ class ExtractPalmettoStateArmory:
             self.handle_age_verification()
         except Exception as e:
             logger.info(f"error during soup generation: {e}")
-            self.driver.quit()
             time.sleep(5)
             return None
         else:
             logger.info("Returning soup element.")
             soup = bs(self.driver.page_source, "html.parser")
-            self.driver.quit()
-            time.sleep(5)
             return soup
 
     def get_soup_element(self, url):
@@ -213,37 +156,20 @@ class ExtractPalmettoStateArmory:
                 logger.info(f"Soup found in attempt: {attempts+1}")
                 return soup
             else:
-                # if self.is_webdriver_alive():
-                # try:
-                #     # Attempt to quit regardless of errors
-                #     self.driver.quit()
-                # except Exception as e:
-                #     logger.error(f"Error during driver quit: {e}")
-                # Ensure attribute is reset
-                # self.driver = None
-                logger.warning("Soup not found, taking rest for 100 seconds")
-                time.sleep(100)
-                logger.info("waking up after 100 seconds")
-                print("soup issue occured")
+                logger.warning(f"Soup not found {url}")
+                try:
+                    self.clear_chrome_resources()
+                except Exception as e:
+                    logger.error(f"Error occured: {e}")
+                    logger.info("setting up new driver..")
+                    self._setup_new_driver()
+                else:
+                    time.sleep(10)
+                    logger.info("waking up after 10 seconds")
+            continue
         logger.error(f"Soup not found after {self.max_retries} attempts")
         logger.error("Throwing error for now")
         raise RuntimeError(f"Content not found: {url}. need to start again.")
-
-    def is_webdriver_alive(self):
-        logger.info("Checking whether the driver is alive")
-        try:
-            if self.driver.current_url:
-                return True
-            logger.info("The driver appears to be alive")
-            return False
-        except (NoSuchElementException, WebDriverException, AssertionError):
-            logger.warning("The driver appears to be dead")
-            return False
-        except Exception as ex:
-            logger.error(
-                f"Encountered an unexpected exception type {ex} while checking the driver status"
-            )
-            return False
 
     def get_product_items_url(self, url, batch_id):
         logger.info(f"Scraping items for URL: {url}")
